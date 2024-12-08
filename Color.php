@@ -1,16 +1,31 @@
 <?php
 
-namespace Faker\Provider;
+declare(strict_types=1);
 
-class Color extends Base
+namespace Faker\Core;
+
+use Faker\Extension;
+use Faker\Extension\Helper;
+
+/**
+ * @experimental This class is experimental and does not fall under our BC promise
+ */
+final class Color implements Extension\ColorExtension
 {
-    protected static $safeColorNames = [
+    private Extension\NumberExtension $numberExtension;
+
+    /**
+     * @var string[]
+     */
+    private array $safeColorNames = [
         'black', 'maroon', 'green', 'navy', 'olive',
         'purple', 'teal', 'lime', 'blue', 'silver',
         'gray', 'yellow', 'fuchsia', 'aqua', 'white',
     ];
-
-    protected static $allColorNames = [
+    /**
+     * @var string[]
+     */
+    private array $allColorNames = [
         'AliceBlue', 'AntiqueWhite', 'Aqua', 'Aquamarine',
         'Azure', 'Beige', 'Bisque', 'Black', 'BlanchedAlmond',
         'Blue', 'BlueViolet', 'Brown', 'BurlyWood', 'CadetBlue',
@@ -39,36 +54,45 @@ class Color extends Base
         'Turquoise', 'Violet', 'Wheat', 'White', 'WhiteSmoke', 'Yellow', 'YellowGreen',
     ];
 
+    public function __construct(?Extension\NumberExtension $numberExtension = null)
+    {
+        $this->numberExtension = $numberExtension ?: new Number();
+    }
+
     /**
      * @example '#fa3cc2'
-     *
-     * @return string
      */
-    public static function hexColor()
+    public function hexColor(): string
     {
-        return '#' . str_pad(dechex(self::numberBetween(1, 16777215)), 6, '0', STR_PAD_LEFT);
+        return '#' . str_pad(dechex($this->numberExtension->numberBetween(1, 16777215)), 6, '0', STR_PAD_LEFT);
     }
 
     /**
      * @example '#ff0044'
-     *
-     * @return string
      */
-    public static function safeHexColor()
+    public function safeHexColor(): string
     {
-        $color = str_pad(dechex(self::numberBetween(0, 255)), 3, '0', STR_PAD_LEFT);
+        $color = str_pad(dechex($this->numberExtension->numberBetween(0, 255)), 3, '0', STR_PAD_LEFT);
 
-        return '#' . $color[0] . $color[0] . $color[1] . $color[1] . $color[2] . $color[2];
+        return sprintf(
+            '#%s%s%s%s%s%s',
+            $color[0],
+            $color[0],
+            $color[1],
+            $color[1],
+            $color[2],
+            $color[2],
+        );
     }
 
     /**
      * @example 'array(0,255,122)'
      *
-     * @return array
+     * @return int[]
      */
-    public static function rgbColorAsArray()
+    public function rgbColorAsArray(): array
     {
-        $color = static::hexColor();
+        $color = $this->hexColor();
 
         return [
             hexdec(substr($color, 1, 2)),
@@ -79,80 +103,75 @@ class Color extends Base
 
     /**
      * @example '0,255,122'
-     *
-     * @return string
      */
-    public static function rgbColor()
+    public function rgbColor(): string
     {
-        return implode(',', static::rgbColorAsArray());
+        return implode(',', $this->rgbColorAsArray());
     }
 
     /**
      * @example 'rgb(0,255,122)'
-     *
-     * @return string
      */
-    public static function rgbCssColor()
+    public function rgbCssColor(): string
     {
-        return 'rgb(' . static::rgbColor() . ')';
+        return sprintf(
+            'rgb(%s)',
+            $this->rgbColor(),
+        );
     }
 
     /**
      * @example 'rgba(0,255,122,0.8)'
-     *
-     * @return string
      */
-    public static function rgbaCssColor()
+    public function rgbaCssColor(): string
     {
-        return 'rgba(' . static::rgbColor() . ',' . static::randomFloat(1, 0, 1) . ')';
+        return sprintf(
+            'rgba(%s,%s)',
+            $this->rgbColor(),
+            $this->numberExtension->randomFloat(1, 0, 1),
+        );
     }
 
     /**
      * @example 'blue'
-     *
-     * @return string
      */
-    public static function safeColorName()
+    public function safeColorName(): string
     {
-        return static::randomElement(static::$safeColorNames);
+        return Helper::randomElement($this->safeColorNames);
     }
 
     /**
      * @example 'NavajoWhite'
-     *
-     * @return string
      */
-    public static function colorName()
+    public function colorName(): string
     {
-        return static::randomElement(static::$allColorNames);
+        return Helper::randomElement($this->allColorNames);
     }
 
     /**
      * @example '340,50,20'
-     *
-     * @return string
      */
-    public static function hslColor()
+    public function hslColor(): string
     {
         return sprintf(
             '%s,%s,%s',
-            self::numberBetween(0, 360),
-            self::numberBetween(0, 100),
-            self::numberBetween(0, 100),
+            $this->numberExtension->numberBetween(0, 360),
+            $this->numberExtension->numberBetween(0, 100),
+            $this->numberExtension->numberBetween(0, 100),
         );
     }
 
     /**
      * @example array(340, 50, 20)
      *
-     * @return array
+     * @return int[]
      */
-    public static function hslColorAsArray()
+    public function hslColorAsArray(): array
     {
         return [
-            self::numberBetween(0, 360),
-            self::numberBetween(0, 100),
-            self::numberBetween(0, 100),
+            $this->numberExtension->numberBetween(0, 360),
+            $this->numberExtension->numberBetween(0, 100),
+            $this->numberExtension->numberBetween(0, 100),
         ];
     }
 }

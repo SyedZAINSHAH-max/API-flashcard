@@ -1,114 +1,158 @@
-<p style="text-align: center"><img src="https://github.com/FakerPHP/Artwork/raw/main/src/socialcard.png" alt="Social card of FakerPHP"></p>
+Dot Access Data
+===============
 
-# Faker
+[![Latest Version](https://img.shields.io/packagist/v/dflydev/dot-access-data.svg?style=flat-square)](https://packagist.org/packages/dflydev/dot-access-data)
+[![Total Downloads](https://img.shields.io/packagist/dt/dflydev/dot-access-data.svg?style=flat-square)](https://packagist.org/packages/dflydev/dot-access-data)
+[![Software License](https://img.shields.io/badge/License-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![Build Status](https://img.shields.io/github/workflow/status/dflydev/dflydev-dot-access-data/Tests/main.svg?style=flat-square)](https://github.com/dflydev/dflydev-dot-access-data/actions?query=workflow%3ATests+branch%3Amain)
+[![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/dflydev/dflydev-dot-access-data.svg?style=flat-square)](https://scrutinizer-ci.com/g/dflydev/dflydev-dot-access-data/code-structure/)
+[![Quality Score](https://img.shields.io/scrutinizer/g/dflydev/dflydev-dot-access-data.svg?style=flat-square)](https://scrutinizer-ci.com/g/dflydev/dflydev-dot-access-data)
 
-[![Packagist Downloads](https://img.shields.io/packagist/dm/FakerPHP/Faker)](https://packagist.org/packages/fakerphp/faker)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/FakerPHP/Faker/Tests/main)](https://github.com/FakerPHP/Faker/actions)
-[![Type Coverage](https://shepherd.dev/github/FakerPHP/Faker/coverage.svg)](https://shepherd.dev/github/FakerPHP/Faker)
-[![Code Coverage](https://codecov.io/gh/FakerPHP/Faker/branch/main/graph/badge.svg)](https://codecov.io/gh/FakerPHP/Faker)
+Given a deep data structure, access data by dot notation.
 
-Faker is a PHP library that generates fake data for you. Whether you need to bootstrap your database, create good-looking XML documents, fill-in your persistence to stress test it, or anonymize data taken from a production service, Faker is for you.
 
-It's heavily inspired by Perl's [Data::Faker](https://metacpan.org/pod/Data::Faker), and by Ruby's [Faker](https://rubygems.org/gems/faker).
+Requirements
+------------
 
-## Getting Started
+ * PHP (7.1+)
 
-### Installation
+> For PHP (5.3+) please refer to version `1.0`.
 
-Faker requires PHP >= 7.4.
 
-```shell
-composer require fakerphp/faker
-```
+Usage
+-----
 
-### Documentation
-
-Full documentation can be found over on [fakerphp.github.io](https://fakerphp.github.io).
-
-### Basic Usage
-
-Use `Faker\Factory::create()` to create and initialize a Faker generator, which can generate data by accessing methods named after the type of data you want.
+Abstract example:
 
 ```php
-<?php
-require_once 'vendor/autoload.php';
+use Dflydev\DotAccessData\Data;
 
-// use the factory to create a Faker\Generator instance
-$faker = Faker\Factory::create();
-// generate data by calling methods
-echo $faker->name();
-// 'Vince Sporer'
-echo $faker->email();
-// 'walter.sophia@hotmail.com'
-echo $faker->text();
-// 'Numquam ut mollitia at consequuntur inventore dolorem.'
+$data = new Data;
+
+$data->set('a.b.c', 'C');
+$data->set('a.b.d', 'D1');
+$data->append('a.b.d', 'D2');
+$data->set('a.b.e', ['E0', 'E1', 'E2']);
+
+// C
+$data->get('a.b.c');
+
+// ['D1', 'D2']
+$data->get('a.b.d');
+
+// ['E0', 'E1', 'E2']
+$data->get('a.b.e');
+
+// true
+$data->has('a.b.c');
+
+// false
+$data->has('a.b.d.j');
+
+
+// 'some-default-value'
+$data->get('some.path.that.does.not.exist', 'some-default-value');
+
+// throws a MissingPathException because no default was given
+$data->get('some.path.that.does.not.exist');
 ```
 
-Each call to `$faker->name()` yields a different (random) result. This is because Faker uses `__call()` magic, and forwards `Faker\Generator->$method()` calls to `Faker\Generator->format($method, $attributes)`.
+A more concrete example:
 
 ```php
-<?php
-for ($i = 0; $i < 3; $i++) {
-    echo $faker->name() . "\n";
-}
+use Dflydev\DotAccessData\Data;
 
-// 'Cyrus Boyle'
-// 'Alena Cummerata'
-// 'Orlo Bergstrom'
+$data = new Data([
+    'hosts' => [
+        'hewey' => [
+            'username' => 'hman',
+            'password' => 'HPASS',
+            'roles'    => ['web'],
+        ],
+        'dewey' => [
+            'username' => 'dman',
+            'password' => 'D---S',
+            'roles'    => ['web', 'db'],
+            'nick'     => 'dewey dman',
+        ],
+        'lewey' => [
+            'username' => 'lman',
+            'password' => 'LP@$$',
+            'roles'    => ['db'],
+        ],
+    ],
+]);
+
+// hman
+$username = $data->get('hosts.hewey.username');
+// HPASS
+$password = $data->get('hosts.hewey.password');
+// ['web']
+$roles = $data->get('hosts.hewey.roles');
+// dewey dman
+$nick = $data->get('hosts.dewey.nick');
+// Unknown
+$nick = $data->get('hosts.lewey.nick', 'Unknown');
+
+// DataInterface instance
+$dewey = $data->getData('hosts.dewey');
+// dman
+$username = $dewey->get('username');
+// D---S
+$password = $dewey->get('password');
+// ['web', 'db']
+$roles = $dewey->get('roles');
+
+// No more lewey
+$data->remove('hosts.lewey');
+
+// Add DB to hewey's roles
+$data->append('hosts.hewey.roles', 'db');
+
+$data->set('hosts.april', [
+    'username' => 'aman',
+    'password' => '@---S',
+    'roles'    => ['web'],
+]);
+
+// Check if a key exists (true to this case)
+$hasKey = $data->has('hosts.dewey.username');
 ```
 
-## Automated refactoring
-
-If you already used this library with its properties, they are now deprecated and needs to be replaced by their equivalent methods.
-
-You can use the provided [Rector](https://github.com/rectorphp/rector) config file to automate the work.
-
-Run
-
-```bash
-composer require --dev rector/rector
-```
-
-to install `rector/rector`.
-
-Run
-
-```bash
-vendor/bin/rector process src/ --config vendor/fakerphp/faker/rector-migrate.php
-```
-
-to run `rector/rector`.
-
-*Note:* do not forget to replace `src/` with the path to your source directory.
-
-Alternatively, import the configuration in your `rector.php` file:
+`Data` may be used as an array, since it implements `ArrayAccess` interface:
 
 ```php
-<?php
+// Get
+$data->get('name') === $data['name']; // true
 
-declare(strict_types=1);
+$data['name'] = 'Dewey';
+// is equivalent to
+$data->set($name, 'Dewey');
 
-use Rector\Config;
+isset($data['name']) === $data->has('name');
 
-return static function (Config\RectorConfig $rectorConfig): void {
-    $rectorConfig->import('vendor/fakerphp/faker/rector-migrate.php');
-};
+// Remove key
+unset($data['name']);
 ```
 
-## License
+`/` can also be used as a path delimiter:
 
-Faker is released under the MIT License. See [`LICENSE`](LICENSE) for details.
+```php
+$data->set('a/b/c', 'd');
+echo $data->get('a/b/c'); // "d"
 
-## Backward compatibility promise
+$data->get('a/b/c') === $data->get('a.b.c'); // true
+```
 
-Faker is using [Semver](https://semver.org/). This means that versions are tagged
-with MAJOR.MINOR.PATCH. Only a new major version will be allowed to break backward
-compatibility (BC).
+License
+-------
 
-Classes marked as `@experimental` or `@internal` are not included in our backward compatibility promise.
-You are also not guaranteed that the value returned from a method is always the
-same. You are guaranteed that the data type will not change.
+This library is licensed under the MIT License - see the LICENSE file
+for details.
 
-PHP 8 introduced [named arguments](https://wiki.php.net/rfc/named_params), which
-increased the cost and reduces flexibility for package maintainers. The names of the
-arguments for methods in Faker is not included in our BC promise.
+
+Community
+---------
+
+If you have questions or want to help out, join us in the
+[#dflydev](irc://irc.freenode.net/#dflydev) channel on irc.freenode.net.
